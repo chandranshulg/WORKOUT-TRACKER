@@ -59,6 +59,10 @@
             margin-bottom: 10px;
             border-left: 5px solid #4CAF50;
         }
+        .total-time, .calorie-estimate {
+            margin-top: 20px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -68,11 +72,12 @@
     <div class="container">
         <div class="form-group">
             <label for="exerciseType">Exercise Type:</label>
-            <select id="exerciseType">
+            <select id="exerciseType" onchange="showDescription()">
                 <option value="Cardio">Cardio</option>
                 <option value="Strength Training">Strength Training</option>
                 <option value="Yoga">Yoga</option>
             </select>
+            <p id="exerciseDescription"></p>
         </div>
         <div class="form-group">
             <label for="duration">Duration (minutes):</label>
@@ -83,16 +88,39 @@
             <input type="text" id="goal" placeholder="e.g., Burn 500 calories">
         </div>
         <button onclick="addWorkout()">Log Workout</button>
+        <button onclick="clearWorkouts()" style="margin-left: 10px;">Clear All Workouts</button>
         <div class="workout-list" id="workoutList"></div>
+        <div class="total-time" id="totalTime">Total Workout Time: 0 minutes</div>
+        <div class="calorie-estimate" id="calorieEstimate"></div>
     </div>
 
     <script>
+        const exerciseDescriptions = {
+            "Cardio": "Cardio exercises improve your endurance and cardiovascular health.",
+            "Strength Training": "Strength training helps build muscle and increase strength.",
+            "Yoga": "Yoga improves flexibility, balance, and mental well-being."
+        };
+
+        const caloriePerMinute = {
+            "Cardio": 10,
+            "Strength Training": 8,
+            "Yoga": 5
+        };
+
+        let totalTime = 0;
+
+        function showDescription() {
+            const exerciseType = document.getElementById("exerciseType").value;
+            const description = exerciseDescriptions[exerciseType];
+            document.getElementById("exerciseDescription").innerText = description;
+        }
+
         function addWorkout() {
             const exerciseType = document.getElementById("exerciseType").value;
-            const duration = document.getElementById("duration").value;
+            const duration = parseInt(document.getElementById("duration").value);
             const goal = document.getElementById("goal").value;
 
-            if (duration === "" || goal === "") {
+            if (isNaN(duration) || goal === "") {
                 alert("Please fill in all fields.");
                 return;
             }
@@ -109,8 +137,21 @@
 
             workoutList.appendChild(workoutItem);
 
+            totalTime += duration;
+            document.getElementById("totalTime").innerText = `Total Workout Time: ${totalTime} minutes`;
+
+            const caloriesBurned = caloriePerMinute[exerciseType] * duration;
+            document.getElementById("calorieEstimate").innerText = `Estimated Calories Burned: ${caloriesBurned} calories`;
+
             document.getElementById("duration").value = "";
             document.getElementById("goal").value = "";
+        }
+
+        function clearWorkouts() {
+            document.getElementById("workoutList").innerHTML = "";
+            totalTime = 0;
+            document.getElementById("totalTime").innerText = "Total Workout Time: 0 minutes";
+            document.getElementById("calorieEstimate").innerText = "";
         }
     </script>
 </body>
