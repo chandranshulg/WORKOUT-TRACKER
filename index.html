@@ -10,12 +10,14 @@
             background-color: #f2f2f2;
             margin: 0;
             padding: 0;
+            transition: background-color 0.3s ease;
         }
         header {
             background-color: #4CAF50;
             padding: 10px;
             text-align: center;
             color: white;
+            transition: background-color 0.3s ease;
         }
         .container {
             max-width: 800px;
@@ -46,14 +48,15 @@
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            transition: background-color 0.3s ease;
         }
         button:hover {
             background-color: #45a049;
         }
-        .workout-list {
+        .workout-list, .workout-history {
             margin-top: 20px;
         }
-        .workout-item {
+        .workout-item, .history-item {
             background-color: #f9f9f9;
             padding: 10px;
             margin-bottom: 10px;
@@ -63,6 +66,33 @@
             margin-top: 20px;
             font-weight: bold;
         }
+        .progress-container {
+            margin-top: 20px;
+        }
+        .progress-bar {
+            width: 100%;
+            background-color: #ccc;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress {
+            width: 0%;
+            background-color: #4CAF50;
+            height: 20px;
+            text-align: center;
+            color: white;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        .theme-selector {
+            margin-top: 20px;
+        }
+        .profile-section {
+            margin-top: 20px;
+            background-color: #e6ffe6;
+            padding: 15px;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
@@ -70,6 +100,23 @@
         <h1>Daily Workout Tracker</h1>
     </header>
     <div class="container">
+        <div class="profile-section">
+            <h2>User Profile</h2>
+            <div class="form-group">
+                <label for="userName">Name:</label>
+                <input type="text" id="userName" placeholder="Enter your name">
+            </div>
+            <div class="form-group">
+                <label for="userAge">Age:</label>
+                <input type="number" id="userAge" min="1">
+            </div>
+            <div class="form-group">
+                <label for="userWeight">Weight (kg):</label>
+                <input type="number" id="userWeight" min="1">
+            </div>
+            <button onclick="saveProfile()">Save Profile</button>
+        </div>
+
         <div class="form-group">
             <label for="exerciseType">Exercise Type:</label>
             <select id="exerciseType" onchange="showDescription()">
@@ -92,6 +139,27 @@
         <div class="workout-list" id="workoutList"></div>
         <div class="total-time" id="totalTime">Total Workout Time: 0 minutes</div>
         <div class="calorie-estimate" id="calorieEstimate"></div>
+
+        <div class="progress-container">
+            <h3>Workout Progress</h3>
+            <div class="progress-bar">
+                <div id="progress" class="progress">0%</div>
+            </div>
+        </div>
+
+        <div class="workout-history">
+            <h3>Workout History</h3>
+            <div id="workoutHistory"></div>
+        </div>
+
+        <div class="theme-selector">
+            <label for="theme">Choose Theme:</label>
+            <select id="theme" onchange="changeTheme()">
+                <option value="default">Default</option>
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+            </select>
+        </div>
     </div>
 
     <script>
@@ -133,9 +201,15 @@
                 <strong>Type:</strong> ${exerciseType}<br>
                 <strong>Duration:</strong> ${duration} minutes<br>
                 <strong>Goal:</strong> ${goal}
+                <button onclick="editWorkout(this)">Edit</button>
+                <button onclick="deleteWorkout(this)">Delete</button>
             `;
 
             workoutList.appendChild(workoutItem);
+
+            const historyItem = workoutItem.cloneNode(true);
+            historyItem.className = "history-item";
+            document.getElementById("workoutHistory").appendChild(historyItem);
 
             totalTime += duration;
             document.getElementById("totalTime").innerText = `Total Workout Time: ${totalTime} minutes`;
@@ -143,15 +217,88 @@
             const caloriesBurned = caloriePerMinute[exerciseType] * duration;
             document.getElementById("calorieEstimate").innerText = `Estimated Calories Burned: ${caloriesBurned} calories`;
 
+            updateProgress();
+
             document.getElementById("duration").value = "";
             document.getElementById("goal").value = "";
         }
 
+        function editWorkout(button) {
+            const workoutItem = button.parentElement;
+            const type = workoutItem.querySelector('strong:nth-child(1)').innerText.split(': ')[1];
+            const duration = parseInt(workoutItem.querySelector('strong:nth-child(2)').innerText.split(': ')[1]);
+            const goal = workoutItem.querySelector('strong:nth-child(3)').innerText.split(': ')[1];
+
+            document.getElementById("exerciseType").value = type;
+            document.getElementById("duration").value = duration;
+            document.getElementById("goal").value = goal;
+
+            deleteWorkout(button);
+        }
+
+        function deleteWorkout(button) {
+            const workoutItem = button.parentElement;
+            const duration = parseInt(workoutItem.querySelector('strong:nth-child(2)').innerText.split(': ')[1]);
+
+            totalTime -= duration;
+            document.getElementById("totalTime").innerText = `Total Workout Time: ${totalTime} minutes`;
+
+            const exerciseType = workoutItem.querySelector('strong:nth-child(1)').innerText.split(': ')[1];
+            const caloriesBurned = caloriePerMinute[exerciseType] * duration;
+            document.getElementById("calorieEstimate").innerText = `Estimated Calories Burned: ${caloriePerMinute[exerciseType] * totalTime} calories`;
+
+            updateProgress();
+
+            workoutItem.remove();
+        }
+
         function clearWorkouts() {
             document.getElementById("workoutList").innerHTML = "";
+            document.getElementById("workoutHistory").innerHTML = "";
             totalTime = 0;
             document.getElementById("totalTime").innerText = "Total Workout Time: 0 minutes";
             document.getElementById("calorieEstimate").innerText = "";
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const progressElement = document.getElementById("progress");
+            const percentage = (totalTime / 300) * 100;
+            progressElement.style.width = `${Math.min(percentage, 100)}%`;
+            progressElement.innerText = `${Math.min(percentage, 100).toFixed(1)}%`;
+        }
+
+        function saveProfile() {
+            const name = document.getElementById("userName").value;
+            const age = document.getElementById("userAge").value;
+            const weight = document.getElementById("userWeight").value;
+
+            if (!name || !age || !weight) {
+                alert("Please complete your profile.");
+                return;
+            }
+
+            alert(`Profile Saved:\nName: ${name}\nAge: ${age}\nWeight: ${weight} kg`);
+        }
+
+        function changeTheme() {
+            const theme = document.getElementById("theme").value;
+            const body = document.body;
+            const header = document.querySelector("header");
+
+            if (theme === "dark") {
+                body.style.backgroundColor = "#333";
+                body.style.color = "#fff";
+                header.style.backgroundColor = "#222";
+            } else if (theme === "light") {
+                body.style.backgroundColor = "#fff";
+                body.style.color = "#000";
+                header.style.backgroundColor = "#f2f2f2";
+            } else {
+                body.style.backgroundColor = "#f2f2f2";
+                body.style.color = "#000";
+                header.style.backgroundColor = "#4CAF50";
+            }
         }
     </script>
 </body>
